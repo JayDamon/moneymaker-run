@@ -11,4 +11,7 @@ git clone git@github.com:JayDamon/plaid-integration.git ../plaid-integration
 git clone git@github.com:JayDamon/transaction-service.git ../transaction-service
 git clone git@github.com:JayDamon/user-service.git ../user-service
 
-./data/setup.sh
+cd ./data
+
+./setup.sh
+
