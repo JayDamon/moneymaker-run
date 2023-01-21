@@ -10,3 +10,5 @@ git clone git@github.com:JayDamon/moneymakergocloak.git ../
 git clone git@github.com:JayDamon/plaid-integration.git ../
 git clone git@github.com:JayDamon/transaction-service.git ../
 git clone git@github.com:JayDamon/user-service.git ../
+
+./data/setup.sh
