@@ -24,6 +24,10 @@
 /nbdist/
 /.nb-gradle/
 
-/data/
-/rabbitmq/*
+/data/account-service
+/data/budget-service
+/data/keycloak
+/data/rabbitmq
+/data/transaction-service
+/data/user-service
 /.vscode
