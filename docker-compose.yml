@@ -1,0 +1,323 @@
+version: '3'
+
+services:
+
+  frontend:
+    image: cloud.canister.io:5000/jaymond87/moneymaker-client:latest
+    profiles: [ 'frontend' ]
+    container_name: moneymaker-client
+    ports:
+      - "4200:80"
+
+  plaid-service:
+   build:
+     context: ./../plaid-integration
+     dockerfile: ./../plaid-integration/Dockerfile
+   restart: always
+   ports:
+     - "8090:3000"
+   depends_on:
+     keycloak:
+       condition: service_healthy
+   deploy:
+     mode: replicated
+     replicas: 1
+   environment:
+    - HOST_PORT=3000
+    - USER_SERVICE_URL=http://user-service:8091
+    - ISSUER_URI=http://keycloak:8080/auth
+    - CLIENT_NAME=plaid-integration-service
+    - CLIENT_SECRET=jj4we3bbQI28PiFDEYhRSGV9ElpZKQly
+    - REALM=moneymaker
+    - DEBUG_ACTIVE=false
+    - PLAID_CLIENT_ID=638ce7594b9630001797c186
+    - PLAID_SECRET=ee3f49e8b290d2723e2ae95c850006
+    - PLAID_ENV=sandbox
+    - PLAID_PRODUCTS=auth,transactions
+    - PLAID_COUNTRY_CODES=US
+#    - PLAID_REDIRECT_URI=
+
+  user-service:
+   build:
+     context: ./../user-service
+     dockerfile: ./../user-service/Dockerfile
+   restart: always
+   depends_on:
+     user-service-db:
+       condition: service_healthy
+     keycloak:
+       condition: service_healthy
+   ports:
+     - "8091:8091"
+   deploy:
+     mode: replicated
+     replicas: 1
+   environment:
+     - DB_HOST=user-service-db
+     - DB_PORT=5432
+     - DB_USER=postgres
+     - DB_PASSWORD=password
+     - DB_NAME=users
+     - DB_CHARSET=utf8
+
+  admin-service:
+    build:
+      context: ./../admin-service
+      dockerfile: ./../admin-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    ports:
+      - "8079:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
+  user-service-db:
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "users" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./data/user-service/:/var/lib/postgresql/data/
+
+  gateway:
+    build:
+      context: ./../moneymaker-api-gateway-service
+      dockerfile: ./../moneymaker-api-gateway-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - admin-service
+#      admin-service:
+#        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
+  moneymaker-account-service:
+    build:
+      context: ./../account-service
+      dockerfile: ./../account-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - account-service-db
+      - admin-service
+      - rabbit-mq
+      - keycloak
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
+  account-service-db:
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "accounts" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: accounts
+#    volumes:
+#      - ./data/account-service/:/var/lib/postgresql/data/
+
+  moneymaker-budget-service:
+    build:
+      context: ./../budget-service
+      dockerfile: ./../budget-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - budget-service-db
+      - admin-service
+      - rabbit-mq
+      - keycloak
+    ports:
+      - "8084:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
+  budget-service-db:
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5435:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "budgets" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: budgets
+#    volumes:
+#      - ./data/budget-service/:/var/lib/postgresql/data/
+
+  moneymaker-transaction-service:
+    build:
+      context: ./../transaction-service
+      dockerfile: ./../transaction-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - transaction-service-db
+      - admin-service
+      - rabbit-mq
+      - keycloak
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
+  transaction-service-db:
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5436:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "transactions" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: transactions
+#    volumes:
+#      - ./data/transaction-service/:/var/lib/postgresql/data/
+
+  keycloak-db:
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    # temporary 95 Mb volume for Postgres data
+    volumes:
+      - ./data/keycloak/:/var/lib/postgresql/data/
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+
+  keycloak:
+    image: "quay.io/keycloak/keycloak:${KC_VERSION:?err}"
+    command: ["start-dev", "--import-realm", "--http-relative-path=/auth"]
+    restart: unless-stopped
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/auth/health/ready"]
+      start_period: 10s
+    environment:
+      KC_DB: postgres
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_DB_URL: "jdbc:postgresql://keycloak-db:5432/keycloak"
+      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KC_FEATURES: ${KC_FEATURES}
+      KC_REALM_NAME: ${KC_REALM_NAME}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak}
+#    ports:
+#      - mode: ingress
+#        target: 8080
+#        published: ${KC_PORT:-8080}
+#        protocol: tcp
+#    expose:
+#      - "8081"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/moneymaker-realm.json:/opt/keycloak/data/import/realm.json:ro
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+
+  rabbit-mq:
+    image: rabbitmq:3
+    container_name: mm-mq
+    volumes:
+      - ./data/rabbitmq/etc/:/etc/rabbitmq/
+      - ./data/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./data/rabbitmq/logs/:/var/log/rabbitmq/
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: test
+      RABBITMQ_DEFAULT_PASS: test
