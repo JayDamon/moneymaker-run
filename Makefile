@@ -3,20 +3,20 @@ USER_BINARY=userService
 
 up:
 	@echo "Starting Docker images..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "Docker images started!"
 
 up-t: build_transaction
-	docker-compose up --build -d
+	docker compose up --build -d
 
 up_build: build
 	@echo "Stopping docker images (if running...)"
-	docker-compose down
+	docker compose down
 	@echo "Building (when required) and starting docker images..."
-	docker-compose up --build -d
+	docker compose up --build -d
 	@echo "Docker images built and started!"
 
-build: build_pi build_user build_transaction build_account build_budget build_admin build_discovery build_gateway
+build: build_pi build_user build_transaction build_account build_budget build_admin build_gateway
 
 build_pi:
 	@echo "Building build plaid integration binary..."
@@ -47,12 +47,6 @@ build_admin:
 	@echo "Building the Admin Service..."
 	cd ../admin-service && ./mvnw clean package -DskipTests
 	@echo "Admin Service build complete!"
-
-build_discovery:
-	@echo "Building the Service Discovery Service..."
-	cd ../service-discovery && ./mvnw clean package -DskipTests
-	@echo "Service Discovery Service build complete!"
-
 build_gateway:
 	@echo "Building the Gateway Service..."
 	cd ../moneymaker-api-gateway-service && ./mvnw clean package -DskipTests
@@ -60,5 +54,5 @@ build_gateway:
 
 down:
 	@echo "Stopping docker compose..."
-	docker-compose down
+	docker compose down
 	@echo "Done!"
