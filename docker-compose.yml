@@ -301,7 +301,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ./keycloak/moneymaker-realm.json:/opt/keycloak/data/import/realm.json:ro
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm.json
     deploy:
       resources:
         limits:
