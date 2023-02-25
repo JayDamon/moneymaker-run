@@ -13,6 +13,7 @@ services=(
 "moneymaker-client"
 "moneymaker-react-client"
 "moneymakergocloak"
+"moneymakerplaid"
 "service-discovery"
 "transaction-service"
 "user-service"
