@@ -3,7 +3,9 @@
 baseRepo="git@github.com:JayDamon"
 
 services=(
+"account-link-service"
 "account-service"
+"account-update-service"
 "admin-service"
 "budget-service"
 "http-toolbox"
@@ -11,7 +13,6 @@ services=(
 "moneymaker-client"
 "moneymaker-react-client"
 "moneymakergocloak"
-"account-link-service"
 "service-discovery"
 "transaction-service"
 "user-service"
