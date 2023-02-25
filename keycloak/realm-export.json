@@ -80,7 +80,7 @@
       }
     ],
     "client": {
-      "plaid-integration-service": [],
+      "account-link-service-service": [],
       "realm-management": [
         {
           "id": "ea2d0dcb-1968-4dc5-bc4a-f9d87996405c",
@@ -409,11 +409,11 @@
     {
       "id": "162e6370-fc75-4e59-bbed-bd81ce5a163f",
       "createdTimestamp": 1673213894947,
-      "username": "service-account-plaid-integration-service",
+      "username": "service-account-account-link-service-service",
       "enabled": true,
       "totp": false,
       "emailVerified": false,
-      "serviceAccountClientId": "plaid-integration-service",
+      "serviceAccountClientId": "account-link-service-service",
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
@@ -983,7 +983,7 @@
     },
     {
       "id": "badd5671-04b8-43ee-9227-4a1297a3dc23",
-      "clientId": "plaid-integration-service",
+      "clientId": "account-link-service-service",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,

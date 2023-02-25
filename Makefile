@@ -1,4 +1,4 @@
-PLAID_BINARY=plaidIntegration
+ACCOUNT_LINK_BINARY=accountLink
 USER_BINARY=userService
 
 up:
@@ -6,8 +6,10 @@ up:
 	docker compose up -d
 	@echo "Docker images started!"
 
-up-t: build_transaction
-	docker compose up --build -d
+down:
+	@echo "Stopping docker compose..."
+	docker compose down
+	@echo "Done!"
 
 up_build: build
 	@echo "Stopping docker images (if running...)"
@@ -16,11 +18,21 @@ up_build: build
 	docker compose up --build -d
 	@echo "Docker images built and started!"
 
-build: build_pi build_user build_transaction build_account build_budget build_admin build_gateway
+build: build_account_link build_user build_transaction build_account build_budget build_admin build_gateway build_discovery
 
-build_pi:
-	@echo "Building build plaid integration binary..."
-	cd ../plaid-integration && env GOOS=linux CGO_ENABLED=0 go build -o ${PLAID_BINARY} ./cmd/main
+start_react:
+	@echo "Starting react client..."
+	cd ../moneymaker-react-client && npm  start
+	@echo "Done!"
+
+start_angular:
+	@echo "Starting angular client..."
+	cd ../moneymaker-client && npm start
+	@echo "Done!"
+
+build_account_link:
+	@echo "Building build account link service binary..."
+	cd ../account-link-service && env GOOS=linux CGO_ENABLED=0 go build -o ${ACCOUNT_LINK_BINARY} ./cmd/main
 	@echo "Done!"
 
 build_user:
@@ -47,12 +59,69 @@ build_admin:
 	@echo "Building the Admin Service..."
 	cd ../admin-service && ./mvnw clean package -DskipTests
 	@echo "Admin Service build complete!"
+
 build_gateway:
 	@echo "Building the Gateway Service..."
 	cd ../moneymaker-api-gateway-service && ./mvnw clean package -DskipTests
 	@echo "Gateway Service build complete!"
 
-down:
-	@echo "Stopping docker compose..."
-	docker compose down
+build_discovery:
+	@echo "Building the Service Discovery Service..."
+	cd ../service-discovery && ./mvnw clean package -DskipTests
+	@echo "Service Discovery Service build complete!"
+
+up_account_link:
+	@echo "Starting Account Link Service Service..."
+	docker compose up --build -d --force-recreate --no-deps account-link-service
 	@echo "Done!"
+
+up_user:
+	@echo "Starting User Service..."
+	docker compose up --build -d --force-recreate --no-deps user-service
+	@echo "Done!"
+
+up_transaction:
+	@echo "Starting Transaction Service..."
+	docker compose up --build -d --force-recreate --no-deps moneymaker-transaction-service
+	@echo "Done!"
+
+up_account:
+	@echo "Starting the Account Service..."
+	docker compose up --build -d --force-recreate --no-deps moneymaker-account-service
+	@echo "Done!"
+
+up_budget:
+	@echo "Starting the Budget Service..."
+	docker compose up --build -d --force-recreate --no-deps moneymaker-budget-service
+	@echo "Done!"
+
+up_admin:
+	@echo "Starting the Admin Service..."
+	docker compose up --build -d --force-recreate --no-deps admin-service
+	@echo "Done!"
+
+up_gateway:
+	@echo "Starting the API Gateway Service..."
+	docker compose up --build -d --force-recreate --no-deps gateway
+	@echo "Done!"
+
+up_discovery:
+	@echo "Starting the Service Discovery Service..."
+	docker compose up --build -d --force-recreate --no-deps discovery
+	@echo "Done!"
+
+up_build_account_link: build_account_link up_account_link
+
+up_build_user: build_user up_user
+
+up_build_transaction: build_transaction up_transaction
+
+up_build_account: build_account up_account
+
+up_build_budget: build_budget up_budget
+
+up_build_admin: build_admin up_admin
+
+up_build_gateway: build_gateway up_gateway
+
+up_build_discovery: build_discovery up_discovery

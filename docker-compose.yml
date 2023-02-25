@@ -2,17 +2,11 @@ version: '3'
 
 services:
 
-  frontend:
-    image: cloud.canister.io:5000/jaymond87/moneymaker-client:latest
-    profiles: [ 'frontend' ]
-    container_name: moneymaker-client
-    ports:
-      - "4200:80"
-
-  plaid-service:
+  account-link-service:
+   container_name: moneymaker-account-link-service
    build:
-     context: ./../plaid-integration
-     dockerfile: ./../plaid-integration/Dockerfile
+     context: ./../account-link-service
+     dockerfile: ./../account-link-service/Dockerfile
    restart: always
    ports:
      - "8090:3000"
@@ -25,8 +19,8 @@ services:
    environment:
     - HOST_PORT=3000
     - USER_SERVICE_URL=http://user-service:8091
-    - ISSUER_URI=http://keycloak:8080/auth
-    - CLIENT_NAME=plaid-integration-service
+    - ISSUER_URI=http://keycloak:8081/auth
+    - CLIENT_NAME=account-link-service-service
     - CLIENT_SECRET=jj4we3bbQI28PiFDEYhRSGV9ElpZKQly
     - REALM=moneymaker
     - DEBUG_ACTIVE=false
@@ -38,6 +32,7 @@ services:
 #    - PLAID_REDIRECT_URI=
 
   user-service:
+   container_name: moneymaker-user-service
    build:
      context: ./../user-service
      dockerfile: ./../user-service/Dockerfile
@@ -61,18 +56,21 @@ services:
      - DB_CHARSET=utf8
 
   admin-service:
+    container_name: moneymaker-admin-service
     build:
       context: ./../admin-service
       dockerfile: ./../admin-service/Dockerfile
     restart: always
     healthcheck:
-      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      test: "curl --fail --silent localhost:8079/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
       interval: 20s
       timeout: 5s
       retries: 3
       start_period: 15s
+    depends_on:
+      - discovery
     ports:
-      - "8079:8080"
+      - "8079:8079"
     environment:
       SPRING_PROFILES_ACTIVE: localdocker
 
@@ -98,6 +96,25 @@ services:
     volumes:
       - ./data/user-service/:/var/lib/postgresql/data/
 
+  discovery:
+    container_name: discovery
+    build:
+      context: ./../service-discovery
+      dockerfile: ./../service-discovery/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8761/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+#    depends_on:
+#      - admin-service
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
+
   gateway:
     build:
       context: ./../moneymaker-api-gateway-service
@@ -111,6 +128,7 @@ services:
       start_period: 15s
     depends_on:
       - admin-service
+      - discovery
 #      admin-service:
 #        condition: service_healthy
     ports:
@@ -119,6 +137,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   moneymaker-account-service:
+    container_name: moneymaker-account-service
     build:
       context: ./../account-service
       dockerfile: ./../account-service/Dockerfile
@@ -162,6 +181,7 @@ services:
 #      - ./data/account-service/:/var/lib/postgresql/data/
 
   moneymaker-budget-service:
+    container_name: moneymaker-budget-service
     build:
       context: ./../budget-service
       dockerfile: ./../budget-service/Dockerfile
@@ -205,6 +225,7 @@ services:
 #      - ./data/budget-service/:/var/lib/postgresql/data/
 
   moneymaker-transaction-service:
+    container_name: moneymaker-transaction-service
     build:
       context: ./../transaction-service
       dockerfile: ./../transaction-service/Dockerfile
@@ -272,13 +293,13 @@ services:
 
   keycloak:
     image: "quay.io/keycloak/keycloak:${KC_VERSION:?err}"
-    command: ["start-dev", "--import-realm", "--http-relative-path=/auth"]
+    command: ["start-dev", "--import-realm", "--http-relative-path=/auth", "--http-port=8081"]
     restart: unless-stopped
     depends_on:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/auth/health/ready"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8081/auth/health/ready"]
       start_period: 10s
     environment:
       KC_DB: postgres
@@ -299,7 +320,7 @@ services:
 #    expose:
 #      - "8081"
     ports:
-      - "8081:8080"
+      - "8081:8081"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm.json
     deploy:
@@ -309,15 +330,19 @@ services:
           cpus: '0.5'
 
   rabbit-mq:
-    image: rabbitmq:3
+    image: rabbitmq:3-management
     container_name: mm-mq
     volumes:
-      - ./data/rabbitmq/etc/:/etc/rabbitmq/
-      - ./data/rabbitmq/data/:/var/lib/rabbitmq/
-      - ./data/rabbitmq/logs/:/var/log/rabbitmq/
+      - 'rabbitmq_data:/data'
+#      - ./data/rabbitmq/etc/:/etc/rabbitmq/
+#      - ./data/rabbitmq/data/:/var/lib/rabbitmq/
+#      - ./data/rabbitmq/logs/:/var/log/rabbitmq/
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: test
       RABBITMQ_DEFAULT_PASS: test
+
+volumes:
+  rabbitmq_data:

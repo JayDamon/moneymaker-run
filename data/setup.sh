@@ -1,10 +1,8 @@
 #!/bin/bash
 
-KEYCLOAK="./keycloak/"
-
 directories=("./keycloak" "./rabbitmq" "./rabbitmq/etc" "./rabbitmq/data" "./rabbitmq/logs" "./account-service" "./budget-service" "./transaction-service" "./user-service")
 
-for i in ${directories[@]};
+for i in "${directories[@]}";
 do
   if [ ! -d "$i" ]
   then 
