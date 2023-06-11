@@ -28,6 +28,14 @@ do
     checkout="$baseRepo/$i.git $dir"
     echo "$i does not exist. Cloning repository $checkout..."
     git clone $checkout
+
+    if [ -f "$dir/mvnw" ]
+    then
+      pwd
+      echo "mvnw file exists, taking over permissions"
+      chmod +x "$dir/mvnw"
+    fi
+
   fi
 done
 
