@@ -1,5 +1,6 @@
 ACCOUNT_LINK_BINARY=accountLink
 USER_BINARY=userService
+ACCOUNT_UPDATE_BINARY=accountUpdate
 
 up:
 	@echo "Starting Docker images..."
@@ -18,7 +19,7 @@ up_build: build
 	docker compose up --build -d
 	@echo "Docker images built and started!"
 
-build: build_account_link build_user build_transaction build_account build_budget build_admin build_gateway build_discovery
+build: build_account_link build_account_update build_user build_transaction build_account build_budget build_admin build_gateway build_discovery
 
 start_react:
 	@echo "Starting react client..."
@@ -33,6 +34,11 @@ start_angular:
 build_account_link:
 	@echo "Building build account link service binary..."
 	cd ../account-link-service && env GOOS=linux CGO_ENABLED=0 go build -o ${ACCOUNT_LINK_BINARY} ./cmd/main
+	@echo "Done!"
+
+build_account_update:
+	@echo "Building build account update service binary..."
+	cd ../account-update-service && env GOOS=linux CGO_ENABLED=0 go build -o ${ACCOUNT_UPDATE_BINARY} ./cmd/main
 	@echo "Done!"
 
 build_user:
@@ -75,6 +81,11 @@ up_account_link:
 	docker compose up --build -d --force-recreate --no-deps account-link-service
 	@echo "Done!"
 
+up_account_update:
+	@echo "Starting Account Update Service Service..."
+	docker compose up --build -d --force-recreate --no-deps account-update-service
+	@echo "Done!"
+
 up_user:
 	@echo "Starting User Service..."
 	docker compose up --build -d --force-recreate --no-deps user-service
@@ -111,6 +122,8 @@ up_discovery:
 	@echo "Done!"
 
 up_build_account_link: build_account_link up_account_link
+
+up_build_account_update: build_account_update up_account_update
 
 up_build_user: build_user up_user
 

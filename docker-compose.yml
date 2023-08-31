@@ -31,6 +31,41 @@ services:
     - PLAID_COUNTRY_CODES=US
 #    - PLAID_REDIRECT_URI=
 
+  account-update-service:
+    container_name: moneymaker-account-update-service
+    build:
+      context: ./../account-update-service
+      dockerfile: ./../account-update-service/Dockerfile
+    restart: always
+    ports:
+      - "8092:3000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      rabbit-mq:
+        condition: service_started
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - HOST_PORT=3000
+      - USER_SERVICE_URL=http://user-service:8091
+      - ISSUER_URI=http://keycloak:8081/auth
+      - CLIENT_NAME=account-update-service
+      - CLIENT_SECRET=jhWIofATdH4H8dstmdNGafYy7oP7MIEh
+      - REALM=moneymaker
+      - DEBUG_ACTIVE=false
+      - PLAID_CLIENT_ID=638ce7594b9630001797c186
+      - PLAID_SECRET=ee3f49e8b290d2723e2ae95c850006
+      - PLAID_ENV=sandbox
+      - PLAID_PRODUCTS=auth
+      - PLAID_COUNTRY_CODES=US
+      - RABBITMQ_HOST=mm-mq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=test
+      - RABBITMQ_PASSWORD=test
+      - APPLICATION_NAME=account-link-service
+
   user-service:
    container_name: moneymaker-user-service
    build:
@@ -75,6 +110,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   user-service-db:
+    container_name: user-service-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5433:5432"
@@ -116,6 +152,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   gateway:
+    container_name: gateway
     build:
       context: ./../moneymaker-api-gateway-service
       dockerfile: ./../moneymaker-api-gateway-service/Dockerfile
@@ -159,6 +196,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   account-service-db:
+    container_name: account-service-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5434:5432"
@@ -203,6 +241,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   budget-service-db:
+    container_name: budget-service-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5435:5432"
@@ -247,6 +286,7 @@ services:
       SPRING_PROFILES_ACTIVE: localdocker
 
   transaction-service-db:
+    container_name: transaction-service-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5436:5432"
@@ -269,6 +309,7 @@ services:
 #      - ./data/transaction-service/:/var/lib/postgresql/data/
 
   keycloak-db:
+    container_name: keycloak-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5432:5432"
@@ -292,6 +333,7 @@ services:
           cpus: '0.5'
 
   keycloak:
+    container_name: keycloak
     image: "quay.io/keycloak/keycloak:${KC_VERSION:?err}"
     command: ["start-dev", "--import-realm", "--http-relative-path=/auth", "--http-port=8081"]
     restart: unless-stopped
@@ -330,8 +372,8 @@ services:
           cpus: '0.5'
 
   rabbit-mq:
-    image: rabbitmq:3-management
     container_name: mm-mq
+    image: rabbitmq:3-management
     volumes:
       - 'rabbitmq_data:/data'
 #      - ./data/rabbitmq/etc/:/etc/rabbitmq/
