@@ -18,9 +18,10 @@ services:
      replicas: 1
    environment:
     - HOST_PORT=3000
+    - APPLICATION_NAME=account-link-service
     - USER_SERVICE_URL=http://user-service:8091
     - ISSUER_URI=http://keycloak:8081/auth
-    - CLIENT_NAME=account-link-service-service
+    - CLIENT_NAME=account-link-service
     - CLIENT_SECRET=jj4we3bbQI28PiFDEYhRSGV9ElpZKQly
     - REALM=moneymaker
     - DEBUG_ACTIVE=false
@@ -29,6 +30,10 @@ services:
     - PLAID_ENV=sandbox
     - PLAID_PRODUCTS=auth,transactions
     - PLAID_COUNTRY_CODES=US
+    - RABBITMQ_HOST=mm-mq
+    - RABBITMQ_PORT=5672
+    - RABBITMQ_USERNAME=test
+    - RABBITMQ_PASSWORD=test
 #    - PLAID_REDIRECT_URI=
 
   account-update-service:
@@ -64,7 +69,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USERNAME=test
       - RABBITMQ_PASSWORD=test
-      - APPLICATION_NAME=account-link-service
+      - APPLICATION_NAME=account-update-service
 
   user-service:
    container_name: moneymaker-user-service
@@ -89,6 +94,9 @@ services:
      - DB_PASSWORD=password
      - DB_NAME=users
      - DB_CHARSET=utf8
+     - CLIENT_NAME=user-service
+     - CLIENT_SECRET=aumoSmpgYugHVpiQvH0T4IYUzZslLh3T
+     - REALM=moneymaker
 
   admin-service:
     container_name: moneymaker-admin-service
@@ -129,8 +137,8 @@ services:
       POSTGRES_DB: users
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-    volumes:
-      - ./data/user-service/:/var/lib/postgresql/data/
+#    volumes:
+#      - ./data/user-service/:/var/lib/postgresql/data/
 
   discovery:
     container_name: discovery
@@ -324,8 +332,8 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
     # temporary 95 Mb volume for Postgres data
-    volumes:
-      - ./data/keycloak/:/var/lib/postgresql/data/
+#    volumes:
+#      - ./data/keycloak/:/var/lib/postgresql/data/
     deploy:
       resources:
         limits:

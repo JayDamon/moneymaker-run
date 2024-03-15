@@ -1,0 +1,15 @@
+account-link-service
+account-service
+account-update-service
+admin-service
+budget-service
+http-toolbox
+moneymaker-api-gateway-service
+moneymaker-client
+moneymaker-react-client
+moneymakergocloak
+moneymakerplaid
+moneymakerrabbit
+service-discovery
+transaction-service
+user-service
