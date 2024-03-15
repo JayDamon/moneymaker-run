@@ -137,8 +137,8 @@ services:
       POSTGRES_DB: users
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-    volumes:
-      - ./data/user-service/:/var/lib/postgresql/data/
+#    volumes:
+#      - ./data/user-service/:/var/lib/postgresql/data/
 
   discovery:
     container_name: discovery
@@ -332,8 +332,8 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
     # temporary 95 Mb volume for Postgres data
-    volumes:
-      - ./data/keycloak/:/var/lib/postgresql/data/
+#    volumes:
+#      - ./data/keycloak/:/var/lib/postgresql/data/
     deploy:
       resources:
         limits:

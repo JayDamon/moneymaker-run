@@ -10,6 +10,7 @@ do
     mkdir $i
   else
     echo "Directory $i already exists. Skipping."
+  chmod -R 777 $i
   fi
 done
 
