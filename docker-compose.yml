@@ -71,6 +71,41 @@ services:
       - RABBITMQ_PASSWORD=test
       - APPLICATION_NAME=account-update-service
 
+  transaction-update-service:
+    container_name: moneymaker-transaction-update-service
+    build:
+      context: ./../transaction-update-service
+      dockerfile: ./../transaction-update-service/Dockerfile
+    restart: always
+    ports:
+      - "8093:3000"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      rabbit-mq:
+        condition: service_started
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - HOST_PORT=3000
+      - USER_SERVICE_URL=http://user-service:8093
+      - ISSUER_URI=http://keycloak:8081/auth
+      - CLIENT_NAME=transaction-update-service
+      - CLIENT_SECRET=dNndXNn2soKyTAq4pGessNFclL2UhZ1v
+      - REALM=moneymaker
+      - DEBUG_ACTIVE=false
+      - PLAID_CLIENT_ID=638ce7594b9630001797c186
+      - PLAID_SECRET=ee3f49e8b290d2723e2ae95c850006
+      - PLAID_ENV=sandbox
+      - PLAID_PRODUCTS=auth
+      - PLAID_COUNTRY_CODES=US
+      - RABBITMQ_HOST=mm-mq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=test
+      - RABBITMQ_PASSWORD=test
+      - APPLICATION_NAME=transaction-update-service
+
   user-service:
    container_name: moneymaker-user-service
    build:
@@ -350,7 +385,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8081/auth/health/ready"]
-      start_period: 10s
+      interval: 40s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
     environment:
       KC_DB: postgres
       KC_DB_USERNAME: keycloak

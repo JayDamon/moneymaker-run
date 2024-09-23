@@ -13,3 +13,4 @@ moneymakerrabbit
 service-discovery
 transaction-service
 user-service
+transaction-update-service

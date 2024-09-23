@@ -18,6 +18,7 @@ services=(
 "service-discovery"
 "transaction-service"
 "user-service"
+"transaction-update-service"
 )
 
 for i in "${services[@]}";

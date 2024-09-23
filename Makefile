@@ -1,6 +1,7 @@
 ACCOUNT_LINK_BINARY=accountLink
 USER_BINARY=userService
 ACCOUNT_UPDATE_BINARY=accountUpdate
+TRANSACTION_UPDATE_BINARY=transactionUpdate
 
 up:
 	@echo "Starting Docker images..."
@@ -19,7 +20,7 @@ up_build: build
 	docker compose up --build -d
 	@echo "Docker images built and started!"
 
-build: build_account_link build_account_update build_user build_transaction build_account build_budget build_admin build_gateway build_discovery
+build: build_account_link build_account_update build_user build_transaction build_account build_budget build_admin build_gateway build_discovery build_transaction_update
 
 start_react:
 	@echo "Starting react client..."
@@ -39,6 +40,11 @@ build_account_link:
 build_account_update:
 	@echo "Building build account update service binary..."
 	cd ../account-update-service && env GOOS=linux CGO_ENABLED=0 go build -o ${ACCOUNT_UPDATE_BINARY} ./cmd/main
+	@echo "Done!"
+
+build_transaction_update:
+	@echo "Building build transaction update service binary..."
+	cd ../transaction-update-service && env GOOS=linux CGO_ENABLED=0 go build -o ${TRANSACTION_UPDATE_BINARY} ./cmd/main
 	@echo "Done!"
 
 build_user:
@@ -86,6 +92,11 @@ up_account_update:
 	docker compose up --build -d --force-recreate --no-deps account-update-service
 	@echo "Done!"
 
+up_transaction_update:
+	@echo "Starting Transaction Update Service Service..."
+	docker compose up --build -d --force-recreate --no-deps transaction-update-service
+	@echo "Done!"
+
 up_user:
 	@echo "Starting User Service..."
 	docker compose up --build -d --force-recreate --no-deps user-service
@@ -124,6 +135,8 @@ up_discovery:
 up_build_account_link: build_account_link up_account_link
 
 up_build_account_update: build_account_update up_account_update
+
+up_build_transaction_update: build_transaction_update up_transaction_update
 
 up_build_user: build_user up_user
 
