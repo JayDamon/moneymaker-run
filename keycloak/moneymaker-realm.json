@@ -80,7 +80,7 @@
       }
     ],
     "client": {
-      "account-link-service-service": [],
+      "account-link-service": [],
       "realm-management": [
         {
           "id": "ea2d0dcb-1968-4dc5-bc4a-f9d87996405c",
