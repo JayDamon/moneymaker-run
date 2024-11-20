@@ -131,6 +131,10 @@ services:
      - DB_CHARSET=utf8
      - CLIENT_NAME=user-service
      - CLIENT_SECRET=aumoSmpgYugHVpiQvH0T4IYUzZslLh3T
+     - RABBITMQ_HOST=mm-mq
+     - RABBITMQ_PORT=5672
+     - RABBITMQ_USERNAME=test
+     - RABBITMQ_PASSWORD=test
      - REALM=moneymaker
 
   admin-service:
