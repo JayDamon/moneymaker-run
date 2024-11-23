@@ -104,17 +104,17 @@ up_user:
 
 up_transaction:
 	@echo "Starting Transaction Service..."
-	docker compose up --build -d --force-recreate --no-deps moneymaker-transaction-service
+	docker compose up --build -d --force-recreate --no-deps transaction-service
 	@echo "Done!"
 
 up_account:
 	@echo "Starting the Account Service..."
-	docker compose up --build -d --force-recreate --no-deps moneymaker-account-service
+	docker compose up --build -d --force-recreate --no-deps account-service
 	@echo "Done!"
 
 up_budget:
 	@echo "Starting the Budget Service..."
-	docker compose up --build -d --force-recreate --no-deps moneymaker-budget-service
+	docker compose up --build -d --force-recreate --no-deps budget-service
 	@echo "Done!"
 
 up_admin:
@@ -130,6 +130,11 @@ up_gateway:
 up_discovery:
 	@echo "Starting the Service Discovery Service..."
 	docker compose up --build -d --force-recreate --no-deps discovery
+	@echo "Done!"
+
+up_build_keycloak_data:
+	@echo "Adding test data to keyclaok db"
+	docker compose up --build --force-recreate --no-deps keycloak-data
 	@echo "Done!"
 
 up_build_account_link: build_account_link up_account_link
