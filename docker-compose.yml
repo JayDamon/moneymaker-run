@@ -34,6 +34,7 @@ services:
     - RABBITMQ_PORT=5672
     - RABBITMQ_USERNAME=test
     - RABBITMQ_PASSWORD=test
+    - CONFIGURE_CORS=false
 #    - PLAID_REDIRECT_URI=
 
   account-update-service:
@@ -70,6 +71,7 @@ services:
       - RABBITMQ_USERNAME=test
       - RABBITMQ_PASSWORD=test
       - APPLICATION_NAME=account-update-service
+      - CONFIGURE_CORS=false
 
   transaction-update-service:
     container_name: transaction-update-service
@@ -113,6 +115,7 @@ services:
       - RABBITMQ_USERNAME=test
       - RABBITMQ_PASSWORD=test
       - APPLICATION_NAME=transaction-update-service
+      - CONFIGURE_CORS=false
 
   transaction-service-db:
     container_name: transaction-service-db
@@ -167,6 +170,7 @@ services:
      - RABBITMQ_USERNAME=test
      - RABBITMQ_PASSWORD=test
      - REALM=moneymaker
+     - CONFIGURE_CORS=false
 
   user-service-db:
     container_name: user-service-db
