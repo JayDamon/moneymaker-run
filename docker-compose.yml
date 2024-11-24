@@ -3,7 +3,7 @@ version: '3'
 services:
 
   account-link-service:
-   container_name: moneymaker-account-link-service
+   container_name: account-link-service
    build:
      context: ./../account-link-service
      dockerfile: ./../account-link-service/Dockerfile
@@ -37,7 +37,7 @@ services:
 #    - PLAID_REDIRECT_URI=
 
   account-update-service:
-    container_name: moneymaker-account-update-service
+    container_name: account-update-service
     build:
       context: ./../account-update-service
       dockerfile: ./../account-update-service/Dockerfile
@@ -72,7 +72,7 @@ services:
       - APPLICATION_NAME=account-update-service
 
   transaction-update-service:
-    container_name: moneymaker-transaction-update-service
+    container_name: transaction-update-service
     build:
       context: ./../transaction-update-service
       dockerfile: ./../transaction-update-service/Dockerfile
@@ -84,6 +84,8 @@ services:
         condition: service_healthy
       rabbit-mq:
         condition: service_started
+      transaction-service-db:
+        condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
@@ -95,6 +97,12 @@ services:
       - CLIENT_SECRET=dNndXNn2soKyTAq4pGessNFclL2UhZ1v
       - REALM=moneymaker
       - DEBUG_ACTIVE=false
+      - DB_HOST=transaction-service-db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=transactions
+      - DB_CHARSET=utf8
       - PLAID_CLIENT_ID=638ce7594b9630001797c186
       - PLAID_SECRET=ee3f49e8b290d2723e2ae95c850006
       - PLAID_ENV=sandbox
@@ -106,8 +114,31 @@ services:
       - RABBITMQ_PASSWORD=test
       - APPLICATION_NAME=transaction-update-service
 
+  transaction-service-db:
+    container_name: transaction-service-db
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5437:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "transactions" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: transactions
+  #    volumes:
+  #      - ./data/transaction-service-deprecated/:/var/lib/postgresql/data/
+
   user-service:
-   container_name: moneymaker-user-service
+   container_name: user-service
    build:
      context: ./../user-service
      dockerfile: ./../user-service/Dockerfile
@@ -131,26 +162,11 @@ services:
      - DB_CHARSET=utf8
      - CLIENT_NAME=user-service
      - CLIENT_SECRET=aumoSmpgYugHVpiQvH0T4IYUzZslLh3T
+     - RABBITMQ_HOST=mm-mq
+     - RABBITMQ_PORT=5672
+     - RABBITMQ_USERNAME=test
+     - RABBITMQ_PASSWORD=test
      - REALM=moneymaker
-
-  admin-service:
-    container_name: moneymaker-admin-service
-    build:
-      context: ./../admin-service
-      dockerfile: ./../admin-service/Dockerfile
-    restart: always
-    healthcheck:
-      test: "curl --fail --silent localhost:8079/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    depends_on:
-      - discovery
-    ports:
-      - "8079:8079"
-    environment:
-      SPRING_PROFILES_ACTIVE: localdocker
 
   user-service-db:
     container_name: user-service-db
@@ -174,6 +190,25 @@ services:
       POSTGRES_PASSWORD: password
 #    volumes:
 #      - ./data/user-service/:/var/lib/postgresql/data/
+
+  admin-service:
+    container_name: admin-service
+    build:
+      context: ./../admin-service
+      dockerfile: ./../admin-service/Dockerfile
+    restart: always
+    healthcheck:
+      test: "curl --fail --silent localhost:8079/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - discovery
+    ports:
+      - "8079:8079"
+    environment:
+      SPRING_PROFILES_ACTIVE: localdocker
 
   discovery:
     container_name: discovery
@@ -216,8 +251,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: localdocker
 
-  moneymaker-account-service:
-    container_name: moneymaker-account-service
+  account-service:
+    container_name: account-service
     build:
       context: ./../account-service
       dockerfile: ./../account-service/Dockerfile
@@ -261,8 +296,8 @@ services:
 #    volumes:
 #      - ./data/account-service/:/var/lib/postgresql/data/
 
-  moneymaker-budget-service:
-    container_name: moneymaker-budget-service
+  budget-service:
+    container_name: budget-service
     build:
       context: ./../budget-service
       dockerfile: ./../budget-service/Dockerfile
@@ -306,8 +341,8 @@ services:
 #    volumes:
 #      - ./data/budget-service/:/var/lib/postgresql/data/
 
-  moneymaker-transaction-service:
-    container_name: moneymaker-transaction-service
+  transaction-service:
+    container_name: transaction-service
     build:
       context: ./../transaction-service
       dockerfile: ./../transaction-service/Dockerfile
@@ -319,7 +354,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      - transaction-service-db
+      - transaction-service-deprecated-db
       - admin-service
       - rabbit-mq
       - keycloak
@@ -328,8 +363,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: localdocker
 
-  transaction-service-db:
-    container_name: transaction-service-db
+  transaction-service-deprecated-db:
+    container_name: transaction-service-deprecated-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5436:5432"
@@ -349,7 +384,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: transactions
 #    volumes:
-#      - ./data/transaction-service/:/var/lib/postgresql/data/
+#      - ./data/transaction-service-deprecated/:/var/lib/postgresql/data/
 
   keycloak-db:
     container_name: keycloak-db
@@ -431,6 +466,15 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: test
       RABBITMQ_DEFAULT_PASS: test
+
+  keycloak-data:
+    container_name: keycloak-data
+    build:
+      context: ./keycloak
+      dockerfile: ./Dockerfile
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
 volumes:
   rabbitmq_data:
