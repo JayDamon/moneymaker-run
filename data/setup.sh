@@ -1,6 +1,6 @@
 #!/bin/bash
 
-directories=("./keycloak" "./rabbitmq" "./rabbitmq/etc" "./rabbitmq/data" "./rabbitmq/logs" "./account-service" "./budget-service" "./transaction-service" "./transaction-service-deprecated" "./user-service")
+directories=("./keycloak" "./rabbitmq" "./rabbitmq/etc" "./rabbitmq/data" "./rabbitmq/logs" "./account-service" "./account-service-deprecated" "./budget-service" "./transaction-service" "./transaction-service-deprecated" "./user-service")
 
 for i in "${directories[@]}";
 do

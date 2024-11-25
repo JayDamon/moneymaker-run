@@ -50,6 +50,8 @@ services:
         condition: service_healthy
       rabbit-mq:
         condition: service_started
+      account-service-db:
+        condition: service_healthy
     deploy:
       mode: replicated
       replicas: 1
@@ -70,8 +72,37 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USERNAME=test
       - RABBITMQ_PASSWORD=test
+      - DB_HOST=account-service-db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=accounts
+      - DB_CHARSET=utf8
       - APPLICATION_NAME=account-update-service
       - CONFIGURE_CORS=false
+
+  account-service-db:
+    container_name: account-service-db
+    image: "postgres:${POSTGRES_VERSION:?err}"
+    ports:
+      - "5438:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "accounts" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.5'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: accounts
+  #    volumes:
+  #      - ./data/account-service/:/var/lib/postgresql/data/
 
   transaction-update-service:
     container_name: transaction-update-service
@@ -268,7 +299,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      - account-service-db
+      - account-service-deprecated-db
       - admin-service
       - rabbit-mq
       - keycloak
@@ -277,8 +308,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: localdocker
 
-  account-service-db:
-    container_name: account-service-db
+  account-service-deprecated-db:
+    container_name: account-service-deprecated-db
     image: "postgres:${POSTGRES_VERSION:?err}"
     ports:
       - "5434:5432"
