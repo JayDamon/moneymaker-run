@@ -233,11 +233,10 @@ services:
       dockerfile: ./../admin-service/Dockerfile
     restart: always
     healthcheck:
-      test: "curl --fail --silent localhost:8079/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      test: "curl --fail --silent localhost:8079/actuator/health | grep UP || exit 1"
       interval: 20s
       timeout: 5s
       retries: 3
-      start_period: 15s
     depends_on:
       - discovery
     ports:
@@ -252,13 +251,10 @@ services:
       dockerfile: ./../service-discovery/Dockerfile
     restart: always
     healthcheck:
-      test: "curl --fail --silent localhost:8761/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      test: "curl --fail --silent localhost:8761/actuator/health | grep UP || exit 1"
       interval: 20s
       timeout: 5s
       retries: 3
-      start_period: 15s
-#    depends_on:
-#      - admin-service
     ports:
       - "8761:8761"
     environment:
@@ -271,11 +267,10 @@ services:
       dockerfile: ./../moneymaker-api-gateway-service/Dockerfile
     restart: always
     healthcheck:
-      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      test: "curl --fail --silent localhost:8080/actuator/health | grep UP || exit 1"
       interval: 20s
       timeout: 5s
-      retries: 3
-      start_period: 15s
+      retries: 5
     depends_on:
       - admin-service
       - discovery
@@ -286,50 +281,50 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: localdocker
 
-  account-service:
-    container_name: account-service
-    build:
-      context: ./../account-service
-      dockerfile: ./../account-service/Dockerfile
-    restart: always
-    healthcheck:
-      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    depends_on:
-      - account-service-deprecated-db
-      - admin-service
-      - rabbit-mq
-      - keycloak
-    ports:
-      - "8083:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: localdocker
-
-  account-service-deprecated-db:
-    container_name: account-service-deprecated-db
-    image: "postgres:${POSTGRES_VERSION:?err}"
-    ports:
-      - "5434:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "accounts" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 500M
-          cpus: '0.5'
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: accounts
-#    volumes:
-#      - ./data/account-service/:/var/lib/postgresql/data/
+#  account-service:
+#    container_name: account-service
+#    build:
+#      context: ./../account-service
+#      dockerfile: ./../account-service/Dockerfile
+#    restart: always
+#    healthcheck:
+#      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+#      interval: 20s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 15s
+#    depends_on:
+#      - account-service-deprecated-db
+#      - admin-service
+#      - rabbit-mq
+#      - keycloak
+#    ports:
+#      - "8083:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: localdocker
+#
+#  account-service-deprecated-db:
+#    container_name: account-service-deprecated-db
+#    image: "postgres:${POSTGRES_VERSION:?err}"
+#    ports:
+#      - "5434:5432"
+#    restart: unless-stopped
+#    healthcheck:
+#      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "accounts" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 500M
+#          cpus: '0.5'
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_DB: accounts
+##    volumes:
+##      - ./data/account-service/:/var/lib/postgresql/data/
 
   budget-service:
     container_name: budget-service
@@ -338,11 +333,13 @@ services:
       dockerfile: ./../budget-service/Dockerfile
     restart: always
     healthcheck:
-      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+      test: "curl --fail --silent localhost:8084
+4
+4
+4       --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
       interval: 20s
       timeout: 5s
       retries: 3
-      start_period: 15s
     depends_on:
       - budget-service-db
       - admin-service
@@ -376,50 +373,50 @@ services:
 #    volumes:
 #      - ./data/budget-service/:/var/lib/postgresql/data/
 
-  transaction-service:
-    container_name: transaction-service
-    build:
-      context: ./../transaction-service
-      dockerfile: ./../transaction-service/Dockerfile
-    restart: always
-    healthcheck:
-      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
-      interval: 20s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    depends_on:
-      - transaction-service-deprecated-db
-      - admin-service
-      - rabbit-mq
-      - keycloak
-    ports:
-      - "8082:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: localdocker
-
-  transaction-service-deprecated-db:
-    container_name: transaction-service-deprecated-db
-    image: "postgres:${POSTGRES_VERSION:?err}"
-    ports:
-      - "5436:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "transactions" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 500M
-          cpus: '0.5'
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: transactions
-#    volumes:
-#      - ./data/transaction-service-deprecated/:/var/lib/postgresql/data/
+#  transaction-service:
+#    container_name: transaction-service
+#    build:
+#      context: ./../transaction-service
+#      dockerfile: ./../transaction-service/Dockerfile
+#    restart: always
+#    healthcheck:
+#      test: "curl --fail --silent localhost:8080/actuator/health | jq --exit-status -n 'inputs | if has(\"status\") then .status==\"UP\" else false end' > /dev/null || exit 1"
+#      interval: 20s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 15s
+#    depends_on:
+#      - transaction-service-deprecated-db
+#      - admin-service
+#      - rabbit-mq
+#      - keycloak
+#    ports:
+#      - "8082:8080"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: localdocker
+#
+#  transaction-service-deprecated-db:
+#    container_name: transaction-service-deprecated-db
+#    image: "postgres:${POSTGRES_VERSION:?err}"
+#    ports:
+#      - "5436:5432"
+#    restart: unless-stopped
+#    healthcheck:
+#      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "transactions" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 500M
+#          cpus: '0.5'
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_DB: transactions
+##    volumes:
+##      - ./data/transaction-service-deprecated/:/var/lib/postgresql/data/
 
   keycloak-db:
     container_name: keycloak-db
@@ -458,7 +455,6 @@ services:
       interval: 40s
       timeout: 30s
       retries: 3
-      start_period: 60s
     environment:
       KC_DB: postgres
       KC_DB_USERNAME: keycloak

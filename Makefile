@@ -20,7 +20,7 @@ up_build: build
 	docker compose up --build -d
 	@echo "Docker images built and started!"
 
-build: build_account_link build_account_update build_user build_transaction build_account build_budget build_admin build_gateway build_discovery build_transaction_update
+build: build_account_link build_account_update build_user build_budget build_admin build_gateway build_discovery build_transaction_update
 
 start_react:
 	@echo "Starting react client..."
